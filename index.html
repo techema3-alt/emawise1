@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07170f">
+<title>...emawisex</title>
+<style>
+:root{
+  --bg:#08190f; --side:#050f09; --panel:#0e2a1c; --panel2:#123628; --line:#1a4630;
+  --text:#e8f1e9; --dim:#8fb09c; --faint:#5f8470; --gold:#d9c27a; --cream:#eef1e6; --ink:#0a1a11; --err:#ff9a9a; --ok:#9be3b4;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Roboto Mono",monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--text);font:16px/1.6 var(--sans);overflow:hidden;-webkit-tap-highlight-color:transparent}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0}
+button:disabled{opacity:.45;cursor:default}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+[hidden]{display:none!important}
+.wm{font-family:var(--serif);font-style:italic;letter-spacing:.02em;white-space:nowrap}
+.wm i{font-style:normal;color:var(--gold);letter-spacing:.14em;margin-right:.1em}
+
+#app{display:flex;height:100dvh}
+/* sidebar */
+#side{width:268px;background:var(--side);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:calc(12px + env(safe-area-inset-top)) 10px calc(10px + env(safe-area-inset-bottom));flex:none}
+.brand{font-size:22px;padding:6px 10px 14px}
+.newbtn{display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border-radius:12px;border:1px solid var(--line);font-size:15px;margin-bottom:12px}
+.newbtn:hover,.newbtn:active{background:var(--panel)}
+#chatList{flex:1;overflow-y:auto;overscroll-behavior:contain}
+.ci{display:flex;align-items:center;border-radius:10px;padding:0 4px 0 12px}
+.ci:hover{background:var(--panel)}
+.ci.on{background:var(--panel2)}
+.ci .t{flex:1;text-align:left;padding:10px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14.5px}
+.ci .x{color:var(--faint);width:34px;height:34px;display:grid;place-items:center;border-radius:8px}
+.ci .x:hover{color:var(--err)}
+.sidefoot{display:flex;gap:6px;padding-top:10px;border-top:1px solid var(--line)}
+.sidefoot button{flex:1;font-size:12.5px;color:var(--dim);padding:8px 4px;border-radius:8px}
+.sidefoot button:hover{background:var(--panel);color:var(--text)}
+#scrim{display:none}
+
+/* main */
+#main{flex:1;min-width:0;display:flex;flex-direction:column;position:relative}
+.top{display:flex;align-items:center;gap:8px;padding:calc(8px + env(safe-area-inset-top)) 12px 8px}
+.ib{width:42px;height:42px;border-radius:10px;display:grid;place-items:center;color:var(--text);flex:none}
+.ib:hover,.ib:active{background:var(--panel)}
+.pill{background:transparent;border:1px solid transparent;border-radius:10px;padding:8px 10px;font-size:15px;font-weight:600;max-width:46vw;text-overflow:ellipsis;appearance:none;-webkit-appearance:none;cursor:pointer}
+.pill:hover{background:var(--panel)}
+.pill option{background:var(--panel);color:var(--text);font-weight:400}
+#effortSel{font-weight:500;color:var(--dim);font-size:14px}
+.grow{flex:1}
+.notice{margin:0 auto 8px;max-width:760px;width:calc(100% - 24px);background:#2a2410;border:1px solid #5b4d1a;color:#f1dc9b;border-radius:12px;padding:10px 14px;font-size:14px}
+#msgs{flex:1;overflow-y:auto;overscroll-behavior:contain;padding:8px 16px 16px}
+.m{max-width:760px;margin:0 auto 22px}
+.m.user .b{background:var(--panel2);border-radius:20px;padding:10px 16px;width:fit-content;margin-left:auto;max-width:85%}
+.txt{white-space:pre-wrap;overflow-wrap:anywhere}
+.acts{display:flex;gap:2px;margin-top:6px;color:var(--faint)}
+.m.user .acts{justify-content:flex-end}
+.acts button{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;color:var(--faint)}
+.acts button:hover{background:var(--panel);color:var(--text)}
+.acts .retry,.acts .edit{display:none}
+.m:last-child .acts .retry{display:grid}
+.m.user:nth-last-child(2) .acts .edit{display:grid}
+body.busy .acts button{display:none!important}
+.files{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;justify-content:flex-end}
+.files img{max-width:170px;max-height:140px;border-radius:12px}
+.files .fn{font:12px var(--mono);color:var(--dim);background:rgba(0,0,0,.25);border-radius:8px;padding:3px 9px;overflow-wrap:anywhere}
+.err{color:var(--err);font-size:14.5px;white-space:pre-wrap;overflow-wrap:anywhere;margin-top:4px}
+.dots{color:var(--gold);letter-spacing:.3em;animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.25}}
+@media (prefers-reduced-motion:reduce){.dots{animation:none}}
+.empty{max-width:520px;margin:16vh auto 0;text-align:center}
+.empty .wm{font-size:40px;margin-bottom:10px}
+.empty p{color:var(--dim)}
+#jump{position:absolute;left:50%;transform:translateX(-50%);bottom:132px;width:38px;height:38px;border-radius:50%;background:var(--panel);border:1px solid var(--line);color:var(--text);display:grid;place-items:center;z-index:5}
+
+/* markdown */
+.md{overflow-wrap:anywhere}
+.md>*:last-child{margin-bottom:0}
+.md p{margin:0 0 .8em}
+.md ul,.md ol{margin:0 0 .8em 1.4em}
+.md li{margin:.2em 0}
+.md h1,.md h2,.md h3,.md h4{font-family:var(--serif);color:var(--gold);margin:.9em 0 .4em;line-height:1.25;font-weight:600}
+.md h1{font-size:1.35em}.md h2{font-size:1.2em}.md h3,.md h4{font-size:1.08em}
+.md blockquote{border-left:3px solid var(--line);padding-left:12px;color:var(--dim);margin:0 0 .8em}
+.md hr{border:0;border-top:1px solid var(--line);margin:1em 0}
+.md .tw{overflow-x:auto;margin:0 0 .9em}
+.md table{border-collapse:collapse;font-size:.93em}
+.md th,.md td{border:1px solid var(--line);padding:6px 10px;text-align:left}
+.md th{background:var(--panel)}
+.md a{color:var(--gold)}
+.md code{font-family:var(--mono);font-size:.9em;background:var(--panel);padding:1px 6px;border-radius:6px}
+.code{position:relative;margin:.6em 0 .9em;background:#04100a;border:1px solid var(--line);border-radius:12px}
+.code pre{padding:14px;overflow-x:auto;font:13px/1.55 var(--mono)}
+.cp{position:absolute;top:8px;right:8px;font-size:12px;color:var(--dim);background:var(--panel);border-radius:8px;padding:4px 10px}
+
+/* composer */
+.cwrap{padding:6px 12px calc(10px + env(safe-area-inset-bottom))}
+.att{max-width:760px;margin:0 auto 8px;display:flex;gap:6px;overflow-x:auto}
+.pillf{display:flex;align-items:center;gap:6px;flex:none;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:4px 4px 4px 10px;font-size:12.5px;max-width:200px}
+.pillf img{width:24px;height:24px;object-fit:cover;border-radius:6px}
+.pillf span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pillf button{color:var(--dim);font-size:16px;width:24px;height:24px}
+.composer{max-width:760px;margin:0 auto;display:flex;align-items:flex-end;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:28px;padding:8px}
+#input{flex:1;resize:none;max-height:180px;min-height:40px;background:transparent;border:0;outline:0;padding:9px 6px;line-height:1.5}
+#input::placeholder{color:var(--faint)}
+.cbtn{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;flex:none}
+#attach{color:var(--dim)}
+#attach:hover{background:var(--panel2)}
+#send{background:var(--cream);color:var(--ink)}
+#send.stop{background:var(--err)}
+.status{max-width:760px;margin:8px auto 0;text-align:center;font-size:12px;color:var(--faint);min-height:18px}
+.status b{color:var(--dim);font-weight:500}
+
+/* overlays */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:40;display:flex;align-items:center;justify-content:center;padding:20px}
+.card{width:100%;max-width:380px;background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:22px}
+.card h2{font:italic 24px var(--serif);margin-bottom:6px}
+.card p{color:var(--dim);font-size:14.5px;margin-bottom:14px}
+.in{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.btn{background:var(--cream);color:var(--ink);font-weight:600;border-radius:12px;padding:12px 18px;width:100%;margin-top:12px}
+#codeErr,#bootMsg{color:var(--err);font-size:14px;margin-top:10px;min-height:18px}
+#toast{position:fixed;left:50%;bottom:calc(120px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--panel2);border:1px solid var(--line);padding:9px 16px;border-radius:12px;font-size:14px;z-index:60;max-width:90%;text-align:center}
+
+@media (max-width:879px){
+  #side{position:fixed;top:0;bottom:0;left:0;z-index:30;transform:translateX(-102%);transition:transform .22s;width:min(84%,320px)}
+  body.dopen #side{transform:none}
+  body.dopen #scrim{display:block;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:25}
+}
+@media (min-width:880px){#menuBtn{display:none}}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="side">
+    <div class="brand wm" id="brand"><i>...</i>emawisex</div>
+    <button class="newbtn" id="newChat"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New chat</button>
+    <div id="chatList"></div>
+    <div class="sidefoot"><button id="exportBtn">Export</button><button id="importBtn">Import</button><button id="clearBtn">Clear all</button></div>
+  </aside>
+  <div id="scrim"></div>
+  <main id="main">
+    <header class="top">
+      <button class="ib" id="menuBtn" aria-label="Chats"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg></button>
+      <select id="modelSel" class="pill" aria-label="Model"></select>
+      <select id="effortSel" class="pill" aria-label="Thinking effort" hidden></select>
+      <span class="grow"></span>
+      <button class="ib" id="newTop" aria-label="New chat"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></button>
+    </header>
+    <div id="notice" class="notice" hidden></div>
+    <div id="msgs" aria-live="polite"></div>
+    <button id="jump" aria-label="Jump to latest" hidden><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M6 13l6 6 6-6"/></svg></button>
+    <div class="cwrap">
+      <div id="att" class="att" hidden></div>
+      <div class="composer">
+        <button id="attach" class="cbtn" aria-label="Attach files"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5l-8.6 8.6a5.5 5.5 0 0 1-7.8-7.8l9.2-9.2a3.7 3.7 0 0 1 5.2 5.2l-9.2 9.2a1.8 1.8 0 0 1-2.6-2.6l8.5-8.5"/></svg></button>
+        <textarea id="input" rows="1" placeholder="Message"></textarea>
+        <button id="send" class="cbtn" aria-label="Send"></button>
+      </div>
+      <div id="status" class="status"></div>
+    </div>
+  </main>
+</div>
+<input type="file" id="file" multiple hidden accept="image/*,application/pdf,text/*,.txt,.md,.json,.csv,.log,.py,.js,.ts,.tsx,.jsx,.html,.css,.xml,.yaml,.yml,.sh,.java,.c,.cpp,.h,.go,.rs,.sql,.ini,.toml">
+<input type="file" id="imp" accept=".json,application/json" hidden>
+
+<div id="lock" class="overlay" hidden><div class="card">
+  <h2>Access code</h2><p>Enter the code you were given to use this chat.</p>
+  <input id="codeIn" class="in" type="password" autocomplete="off" autocapitalize="off" placeholder="Access code">
+  <button id="codeBtn" class="btn">Continue</button><div id="codeErr"></div>
+</div></div>
+<div id="boot" class="overlay"><div class="card">
+  <h2 class="wm"><i>...</i>emawisex</h2><p id="bootTxt">Loading...</p>
+  <div id="bootMsg"></div><button id="bootRetry" class="btn" hidden>Try again</button>
+</div></div>
+<div id="toast" hidden></div>
+
+<script>
+(function(){
+"use strict";
+
+/* >>> SET THIS to your Cloudflare Worker address (no trailing slash) <<< */
+var WORKER_URL="https://emawisex.techema3.workers.dev";
+var API=String(window.EMAWISEX_API||WORKER_URL).replace(/\/+$/,"");
+
+/* ---- storage ---- */
+var mem={};
+var store={
+  get:function(k,d){try{var v=localStorage.getItem(k);if(v!==null)return JSON.parse(v);}catch(e){} return (k in mem)?mem[k]:d;},
+  set:function(k,v){mem[k]=v;try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}},
+  del:function(k){delete mem[k];try{localStorage.removeItem(k);}catch(e){}}
+};
+var $=function(s){return document.querySelector(s);};
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");}
+function est(s){return Math.ceil(String(s||"").length/3.7);}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
+
+var cfg=null,chats=store.get("ex_chats",[]),curId=store.get("ex_cur",null);
+var S={model:store.get("ex_model",""),effort:store.get("ex_effort","")};
+var code=store.get("ex_code","");
+var busy=false,ctrl=null,pend=[],quota={limit:0,remaining:-1};
+
+function persistable(){
+  return chats.map(function(c){return Object.assign({},c,{messages:c.messages.map(function(m){
+    if(!m.files)return m;
+    return Object.assign({},m,{files:m.files.map(function(f){return f.kind==="text"?f:{name:f.name,kind:f.kind,dropped:true};})});
+  })});});
+}
+function save(){store.set("ex_chats",persistable());store.set("ex_cur",curId);}
+var tt=0;
+function toast(m){var t=$("#toast");t.textContent=m;t.hidden=false;clearTimeout(tt);tt=setTimeout(function(){t.hidden=true;},3000);}
+var IC={
+  copy:'<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/>',
+  retry:'<path d="M20 11a8 8 0 1 0-2.3 5.6"/><path d="M20 4v7h-7"/>',
+  edit:'<path d="M4 20h4L19 9l-4-4L4 16z"/>',
+  trash:'<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
+  x:'<path d="M6 6l12 12M18 6L6 18"/>'
+};
+function ico(n,sz){sz=sz||17;return '<svg width="'+sz+'" height="'+sz+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+IC[n]+'</svg>';}
+
+/* ---- chats ---- */
+function newChat(){var c={id:uid(),title:"New chat",messages:[],t:Date.now()};chats.unshift(c);curId=c.id;save();return c;}
+function cur(){for(var i=0;i<chats.length;i++)if(chats[i].id===curId)return chats[i];return chats[0]||newChat();}
+function renderList(){
+  $("#chatList").innerHTML=chats.map(function(c){
+    return '<div class="ci'+(c.id===curId?" on":"")+'" data-id="'+c.id+'"><button class="t">'+esc(c.title)+'</button><button class="x" aria-label="Delete chat">'+ico("trash",15)+'</button></div>';
+  }).join("");
+}
+
+/* ---- markdown ---- */
+function inl(s){
+  var codes=[];
+  s=s.replace(/`([^`\n]+)`/g,function(_,c){codes.push(c);return "\u0001"+(codes.length-1)+"\u0002";});
+  s=s.replace(/\*\*([^*\n]+)\*\*/g,"<b>$1</b>")
+     .replace(/(^|[^*\w])\*([^*\s][^*\n]*?)\*(?![*\w])/g,"$1<em>$2</em>")
+     .replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/g,'<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+  return s.replace(/\u0001(\d+)\u0002/g,function(_,i){return "<code>"+codes[+i]+"</code>";});
+}
+function cells(r){return r.trim().replace(/^\|/,"").replace(/\|$/,"").split("|").map(function(c){return inl(esc(c.trim()));});}
+function mdBlock(p){
+  var L=p.replace(/\r/g,"").split("\n"),out=[],i=0;
+  var HR=/^\s*([-*_])(\s*\1){2,}\s*$/,UL=/^\s*[-*+]\s+/,OL=/^\s*\d+[.)]\s+/,SEP=/^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$/;
+  function special(l){return /^\s*(#{1,4}\s|>|\|)/.test(l)||UL.test(l)||OL.test(l)||HR.test(l);}
+  while(i<L.length){
+    var l=L[i],m;
+    if(!l.trim()){i++;continue;}
+    if((m=l.match(/^(#{1,4})\s+(.*)$/))){out.push("<h"+m[1].length+">"+inl(esc(m[2]))+"</h"+m[1].length+">");i++;continue;}
+    if(HR.test(l)){out.push("<hr>");i++;continue;}
+    if(/^\s*\|/.test(l)&&i+1<L.length&&SEP.test(L[i+1])){
+      var head=cells(l),rows=[];i+=2;
+      while(i<L.length&&L[i].trim()&&L[i].indexOf("|")>=0){rows.push(cells(L[i]));i++;}
+      out.push('<div class="tw"><table><thead><tr>'+head.map(function(c){return "<th>"+c+"</th>";}).join("")+"</tr></thead><tbody>"+
+        rows.map(function(r){return "<tr>"+r.map(function(c){return "<td>"+c+"</td>";}).join("")+"</tr>";}).join("")+"</tbody></table></div>");
+      continue;
+    }
+    if(UL.test(l)||OL.test(l)){
+      var ord=OL.test(l),re=ord?OL:UL,items=[];
+      while(i<L.length&&re.test(L[i])){
+        items.push(L[i].replace(re,""));i++;
+        while(i<L.length&&/^\s{2,}\S/.test(L[i])&&!UL.test(L[i])&&!OL.test(L[i])){items[items.length-1]+=" "+L[i].trim();i++;}
+      }
+      var tag=ord?"ol":"ul";
+      out.push("<"+tag+">"+items.map(function(t){return "<li>"+inl(esc(t))+"</li>";}).join("")+"</"+tag+">");
+      continue;
+    }
+    if(/^>/.test(l)){
+      var q=[];while(i<L.length&&/^>/.test(L[i])){q.push(L[i].replace(/^>\s?/,""));i++;}
+      out.push("<blockquote>"+inl(esc(q.join("\n"))).replace(/\n/g,"<br>")+"</blockquote>");continue;
+    }
+    var para=[l];i++;
+    while(i<L.length&&L[i].trim()&&!special(L[i])){para.push(L[i]);i++;}
+    out.push("<p>"+inl(esc(para.join("\n"))).replace(/\n/g,"<br>")+"</p>");
+  }
+  return out.join("");
+}
+function md(t){
+  return String(t).split("```").map(function(p,i){
+    if(i%2===1){
+      var nl=p.indexOf("\n"),body=nl>=0?p.slice(nl+1):p;
+      return '<div class="code"><button class="cp">Copy</button><pre><code>'+esc(body.replace(/\n$/,""))+'</code></pre></div>';
+    }
+    return p.trim()?'<div class="md">'+mdBlock(p)+'</div>':"";
+  }).join("");
+}
+
+
+/* ---- rendering ---- */
+function msgHtml(m,i){
+  var b;
+  if(m.role==="user"){
+    var fh="";
+    if(m.files&&m.files.length)fh='<div class="files">'+m.files.map(function(f){return (f.kind==="image"&&f.dataUrl)?'<img alt="" src="'+f.dataUrl+'">':'<span class="fn">'+esc(f.name)+'</span>';}).join("")+'</div>';
+    b=fh+(m.content?'<div class="txt">'+esc(m.content)+'</div>':"");
+  }
+  else if(!m.content&&!m.error&&busy&&!m.stopped)b='<span class="dots">...</span>';
+  else b=md(m.content);
+  if(m.error)b+='<div class="err">'+esc(m.error)+'</div>';
+  var a="";
+  if(m.role==="user")a='<button class="edit" data-a="edit" aria-label="Edit" title="Edit">'+ico("edit")+'</button><button data-a="del" aria-label="Delete" title="Delete">'+ico("trash")+'</button>';
+  else if(m.content||m.error||m.stopped)a=(m.content?'<button data-a="copy" aria-label="Copy" title="Copy">'+ico("copy")+'</button>':'')+'<button class="retry" data-a="retry" aria-label="Retry" title="Try again">'+ico("retry")+'</button><button data-a="del" aria-label="Delete" title="Delete">'+ico("trash")+'</button>';
+  return '<div class="m '+m.role+'" data-i="'+i+'"><div class="b">'+b+'</div>'+(a?'<div class="acts">'+a+'</div>':'')+'</div>';
+}
+function renderMsgs(){
+  var c=cur(),box=$("#msgs");
+  if(!c.messages.length)box.innerHTML='<div class="empty"><div class="wm"><i>...</i>emawisex</div><p>How can I help you today?</p></div>';
+  else box.innerHTML=c.messages.map(msgHtml).join("");
+  box.scrollTop=box.scrollHeight;updateStatus();onScroll();
+}
+function appendFrom(i){
+  var c=cur(),box=$("#msgs");
+  if(box.querySelector(".empty"))box.innerHTML="";
+  var h="";for(var j=i;j<c.messages.length;j++)h+=msgHtml(c.messages[j],j);
+  box.insertAdjacentHTML("beforeend",h);box.scrollTop=box.scrollHeight;updateStatus();
+}
+function paintMsg(i){
+  var c=cur(),box=$("#msgs"),el=box.querySelector('[data-i="'+i+'"]');
+  if(!el||!c.messages[i])return;
+  var near=box.scrollHeight-box.scrollTop-box.clientHeight<140;
+  el.outerHTML=msgHtml(c.messages[i],i);
+  if(near)box.scrollTop=box.scrollHeight;
+}
+function onScroll(){var b=$("#msgs");$("#jump").hidden=(b.scrollHeight-b.scrollTop-b.clientHeight)<260;}
+function msgTokens(m){var n=est(m.content);(m.files||[]).forEach(function(f){n+=f.kind==="text"?est(f.text):(f.kind==="pdf"?2500:1000);});return n;}
+function ctxTokens(c){var n=0;c.messages.forEach(function(m){if((m.content||m.files)&&!m.error)n+=msgTokens(m);});return n;}
+function fmtN(n){return n>=1000?(Math.round(n/100)/10)+"k":String(n);}
+function updateStatus(){
+  if(!cfg)return;
+  var used=ctxTokens(cur()),lim=cfg.contextLimit,left=Math.max(0,lim-used);
+  var t='<b>'+fmtN(left)+'</b> tokens left in this chat';
+  if(quota.limit>0)t+=' &nbsp;|&nbsp; <b>'+quota.remaining+'</b> of '+quota.limit+' messages left today';
+  $("#status").innerHTML=t;
+}
+function setBusy(b){document.body.classList.toggle("busy",b);var s=$("#send");s.innerHTML=b?'<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="2.5"/></svg>':'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>';s.className="cbtn"+(b?" stop":"");s.setAttribute("aria-label",b?"Stop":"Send");}
+
+/* ---- API ---- */
+function hdr(){var h={"Content-Type":"application/json"};if(code)h["X-Access-Code"]=code;return h;}
+function friendly(e){
+  if(e&&e.name==="TypeError")return "Can't reach the service. Check your connection and try again.";
+  return (e&&e.message)||"Something went wrong.";
+}
+function toNeutral(m){
+  var fs=m.files||[];
+  if(!fs.length)return {role:m.role,content:m.content};
+  var txt=m.content||"",parts=[];
+  fs.forEach(function(f){
+    if(f.kind==="text")txt+="\n\n[Attached file: "+f.name+"]\n```\n"+f.text+"\n```";
+    else if(f.dropped||!f.dataUrl)txt+="\n\n[Attached "+f.kind+" "+f.name+" is no longer available]";
+    else parts.push({type:f.kind==="pdf"?"pdf":"image",data:f.dataUrl});
+  });
+  if(!parts.length)return {role:m.role,content:txt};
+  parts.push({type:"text",text:txt||"See the attached file."});
+  return {role:m.role,content:parts};
+}
+function buildList(c){
+  var list=c.messages.slice(0,-1).filter(function(m){return (m.content||(m.files&&m.files.length))&&!m.error;}).map(function(m){return {role:m.role,content:m.content,files:m.files};});
+  var total=0,trimmed=false;
+  list.forEach(function(m){total+=msgTokens(m);});
+  while(list.length>1&&total>cfg.contextLimit){total-=msgTokens(list.shift());trimmed=true;}
+  while(list.length&&list[0].role!=="user")list.shift();
+  if(trimmed)toast("Older messages were left out to fit the context limit.");
+  return list;
+}
+async function callChat(list,asst,signal,tick){
+  var res=await fetch(API+"/chat",{method:"POST",headers:hdr(),signal:signal,body:JSON.stringify({model:S.model,effort:S.effort,max_tokens:cfg.maxTokens,messages:list.map(toNeutral)})});
+  var qr=res.headers.get("X-Quota-Remaining");
+  if(qr!==null&&quota.limit>0){quota.remaining=Math.max(0,parseInt(qr,10));}
+  if(!res.ok){
+    var msg="Request failed ("+res.status+").";
+    try{var j=await res.json();if(j&&j.error&&j.error.message)msg=j.error.message;}catch(e){}
+    var er=new Error(msg);er.status=res.status;throw er;
+  }
+  function add(t){if(t){asst.content+=t;tick();}}
+  function ev(j){
+    if(!j||typeof j!=="object")return;
+    if(j.error)throw new Error(typeof j.error==="string"?j.error:(j.error.message||"Stream error"));
+    if(j.type==="error")throw new Error((j.error&&j.error.message)||"Stream error");
+    if(j.choices&&j.choices[0]){var c=j.choices[0],d=c.delta||c.message;if(d&&typeof d.content==="string")add(d.content);}
+    if(j.type==="content_block_delta"&&j.delta&&typeof j.delta.text==="string")add(j.delta.text);
+    if(j.type==="message"&&Array.isArray(j.content))add(j.content.map(function(b){return b.text||"";}).join(""));
+  }
+  var ct=res.headers.get("content-type")||"";
+  if(ct.indexOf("application/json")>=0){ev(await res.json());}
+  else{
+    var reader=res.body.getReader(),dec=new TextDecoder(),buf="";
+    while(true){
+      var r=await reader.read();if(r.done)break;
+      buf+=dec.decode(r.value,{stream:true});
+      var i;
+      while((i=buf.indexOf("\n"))>=0){
+        var line=buf.slice(0,i).trim();buf=buf.slice(i+1);
+        if(line.indexOf("data:")!==0)continue;
+        var d=line.slice(5).trim();if(!d||d==="[DONE]")continue;
+        var j;try{j=JSON.parse(d);}catch(e){continue;}
+        ev(j);
+      }
+    }
+  }
+  if(!asst.content)throw new Error("The model returned an empty reply.");
+}
+
+/* ---- send / retry / edit / delete ---- */
+function canSend(){
+  if(!cfg||cfg.maintenance||!cfg.configured)return false;
+  if(quota.limit>0&&quota.remaining<=0)return false;
+  return true;
+}
+function blockedMsg(){
+  if(!cfg.configured)return "This chat isn't set up yet.";
+  if(cfg.maintenance)return "The service is under maintenance. Please try again later.";
+  if(quota.limit>0&&quota.remaining<=0)return "You've reached today's message limit. It resets at midnight UTC.";
+  return "";
+}
+async function send(){
+  if(busy)return;
+  var inp=$("#input"),text=inp.value.trim();if(!text&&!pend.length)return;
+  if(!canSend()){toast(blockedMsg());return;}
+  var c=cur(),first=c.messages.length,um={role:"user",content:text};
+  if(pend.length){um.files=pend;pend=[];renderPend();}
+  c.messages.push(um);
+  if(c.title==="New chat")c.title=(text||(um.files&&um.files[0].name)||"Files").slice(0,42);
+  inp.value="";autosize();
+  await reply(c,first);
+}
+async function reply(c,first){
+  var asst={role:"assistant",content:"",model:S.model};
+  c.messages.push(asst);
+  busy=true;ctrl=new AbortController();setBusy(true);
+  appendFrom(first);renderList();save();
+  var idx=c.messages.length-1,list=buildList(c),timer=0,last=0;
+  function tick(){
+    if(timer)return;
+    timer=setTimeout(function(){timer=0;last=performance.now();paintMsg(idx);updateStatus();},Math.max(0,80-(performance.now()-last)));
+  }
+  try{await callChat(list,asst,ctrl.signal,tick);}
+  catch(e){
+    if(e&&e.name==="AbortError")asst.stopped=true;
+    else{asst.error=friendly(e);if(e&&e.status===401&&cfg.requiresCode){lockOpen("That code no longer works.");}}
+  }
+  clearTimeout(timer);timer=0;
+  busy=false;ctrl=null;setBusy(false);
+  save();paintMsg(idx);updateStatus();renderList();
+}
+function regen(){
+  if(busy||!canSend()){if(!busy)toast(blockedMsg());return;}
+  var c=cur(),n=c.messages.length;
+  if(n<2||c.messages[n-1].role!=="assistant"||c.messages[n-2].role!=="user")return;
+  c.messages.pop();var el=$("#msgs").lastElementChild;if(el)el.remove();
+  reply(c,c.messages.length);
+}
+function editLast(){
+  if(busy)return;
+  var c=cur(),idx=-1;
+  for(var i=c.messages.length-1;i>=0;i--)if(c.messages[i].role==="user"){idx=i;break;}
+  if(idx<0)return;
+  var um=c.messages[idx];
+  $("#input").value=um.content||"";autosize();
+  pend=(um.files||[]).filter(function(f){return !f.dropped;});renderPend();
+  c.messages.length=idx;if(!c.messages.length)c.title="New chat";
+  save();renderMsgs();renderList();$("#input").focus();
+}
+function delMsg(i){
+  if(busy)return;
+  var c=cur(),m=c.messages[i];if(!m)return;
+  if(m.role==="user"&&c.messages[i+1]&&c.messages[i+1].role==="assistant")c.messages.splice(i,2);else c.messages.splice(i,1);
+  if(!c.messages.length)c.title="New chat";
+  save();renderMsgs();renderList();toast("Deleted");
+}
+function autosize(){var t=$("#input");t.style.height="auto";t.style.height=Math.min(t.scrollHeight,180)+"px";}
+
+/* ---- attachments ---- */
+function renderPend(){
+  var box=$("#att");box.hidden=!pend.length;
+  box.innerHTML=pend.map(function(f,i){return '<div class="pillf" data-i="'+i+'">'+(f.kind==="image"&&f.dataUrl?'<img alt="" src="'+f.dataUrl+'">':'')+'<span>'+esc(f.name)+'</span><button aria-label="Remove">&times;</button></div>';}).join("");
+}
+function readAs(file,how){return new Promise(function(res,rej){var r=new FileReader();r.onerror=function(){rej(new Error("Couldn't read "+file.name));};r.onload=function(){res(r.result);};if(how==="text")r.readAsText(file);else r.readAsDataURL(file);});}
+function shrink(du){return new Promise(function(res,rej){
+  var img=new Image();img.onerror=function(){rej(new Error("Couldn't open that image."));};
+  img.onload=function(){var sc=Math.min(1,1280/Math.max(img.width,img.height)),cv=document.createElement("canvas");cv.width=Math.max(1,Math.round(img.width*sc));cv.height=Math.max(1,Math.round(img.height*sc));cv.getContext("2d").drawImage(img,0,0,cv.width,cv.height);res(cv.toDataURL("image/jpeg",0.82));};
+  img.src=du;});}
+async function readFile(file){
+  var name=file.name||"file",type=file.type||"",lower=name.toLowerCase();
+  if(type.indexOf("image/")===0)return {name:name,kind:"image",dataUrl:await shrink(await readAs(file,"url"))};
+  if(type==="application/pdf"||/\.pdf$/.test(lower)){
+    if(!cfg.features||!cfg.features.pdf)throw new Error("This chat can't read PDFs.");
+    if(file.size>3*1024*1024)throw new Error("PDFs must be under 3 MB.");
+    var du=await readAs(file,"url");
+    return {name:name,kind:"pdf",dataUrl:"data:application/pdf;base64,"+du.slice(du.indexOf(",")+1)};
+  }
+  var txt=await readAs(file.size>200000?file.slice(0,200000):file,"text");
+  if(txt.indexOf("\u0000")>=0)throw new Error(name+" doesn't look like a text file.");
+  if(file.size>200000)txt+="\n[truncated at 200 KB]";
+  return {name:name,kind:"text",text:txt};
+}
+
+/* ---- backup ---- */
+function cleanMsg(m){
+  var o={role:m.role==="assistant"?"assistant":"user",content:String(m.content==null?"":m.content)};
+  ["stopped","error","model"].forEach(function(k){if(m[k]!=null)o[k]=m[k];});
+  if(Array.isArray(m.files))o.files=m.files.filter(function(f){return f&&f.name;}).map(function(f){
+    return f.kind==="text"?{name:String(f.name),kind:"text",text:String(f.text||"")}:{name:String(f.name),kind:f.kind==="pdf"?"pdf":"image",dropped:true};});
+  return o;
+}
+
+/* ---- boot / config ---- */
+function brand(t){
+  t=String(t||"...emawisex");
+  var h=t.indexOf("...")===0?'<i>...</i>'+esc(t.slice(3)):esc(t);
+  $("#brand").innerHTML=h;document.title=t;
+}
+function bootShow(txt,msg,retry){$("#boot").hidden=false;$("#bootTxt").textContent=txt;$("#bootMsg").textContent=msg||"";$("#bootRetry").hidden=!retry;}
+function lockOpen(msg){$("#lock").hidden=false;$("#codeErr").textContent=msg||"";$("#codeIn").value="";setTimeout(function(){$("#codeIn").focus();},50);}
+async function loadConfig(){
+  if(/YOUR-WORKER/.test(API)){bootShow("Not connected yet","Set WORKER_URL at the top of this file to your Worker address.",false);return;}
+  bootShow("Loading...","",false);
+  var res,j;
+  try{res=await fetch(API+"/config",{headers:hdr()});j=await res.json();}
+  catch(e){bootShow("Can't reach the service","Check your connection and try again.",true);return;}
+  if(!res.ok){bootShow("Something went wrong",(j&&j.error&&j.error.message)||("Error "+res.status),true);return;}
+  brand(j.title);
+  if(j.locked){$("#boot").hidden=true;lockOpen(code?"That code didn't work.":"");return;}
+  cfg=j;quota=j.quota||{limit:0,remaining:-1};
+  $("#lock").hidden=true;$("#boot").hidden=true;
+  var ms=$("#modelSel");
+  ms.innerHTML=cfg.models.map(function(m){return '<option value="'+esc(m.id)+'">'+esc(m.label)+'</option>';}).join("");
+  var okModel=cfg.models.some(function(m){return m.id===S.model;});
+  S.model=okModel?S.model:cfg.defaultModel;ms.value=S.model;
+  var es=$("#effortSel");
+  if(cfg.effortOptions&&cfg.effortOptions.length){
+    es.innerHTML=cfg.effortOptions.map(function(e){return '<option value="'+e+'">Effort: '+e.charAt(0).toUpperCase()+e.slice(1)+'</option>';}).join("");
+    S.effort=cfg.effortOptions.indexOf(S.effort)>=0?S.effort:(cfg.defaultEffort&&cfg.effortOptions.indexOf(cfg.defaultEffort)>=0?cfg.defaultEffort:cfg.effortOptions[0]);
+    es.value=S.effort;es.hidden=false;
+  }else{es.hidden=true;S.effort="";}
+  var n=$("#notice"),msg="";
+  if(cfg.maintenance)msg="The service is under maintenance. Please try again later.";
+  else if(!cfg.configured)msg="This chat isn't set up yet.";
+  else if(cfg.announcement)msg=cfg.announcement;
+  n.hidden=!msg;n.textContent=msg;
+  if(!chats.length)newChat();
+  renderList();renderMsgs();setBusy(false);
+}
+
+/* ---- events ---- */
+$("#bootRetry").onclick=loadConfig;
+$("#codeBtn").onclick=function(){var v=$("#codeIn").value.trim();if(!v)return;code=v;store.set("ex_code",code);loadConfig();};
+$("#codeIn").addEventListener("keydown",function(e){if(e.key==="Enter")$("#codeBtn").click();});
+$("#send").onclick=function(){if(busy&&ctrl)ctrl.abort();else send();};
+$("#input").addEventListener("input",autosize);
+$("#input").addEventListener("keydown",function(e){
+  if(e.key==="Enter"&&!e.shiftKey&&!window.matchMedia("(pointer:coarse)").matches){e.preventDefault();send();}
+});
+$("#modelSel").onchange=function(){S.model=this.value;store.set("ex_model",S.model);};
+$("#effortSel").onchange=function(){S.effort=this.value;store.set("ex_effort",S.effort);};
+function drawer(o){document.body.classList.toggle("dopen",o);}
+$("#menuBtn").onclick=function(){drawer(true);};
+$("#scrim").onclick=function(){drawer(false);};
+function startNew(){if(busy)return;var c=cur();if(!c.messages.length){drawer(false);return;}newChat();renderList();renderMsgs();drawer(false);$("#input").focus();}
+$("#newChat").onclick=startNew;$("#newTop").onclick=startNew;
+$("#chatList").onclick=function(e){
+  var row=e.target.closest(".ci");if(!row||busy)return;
+  var id=row.getAttribute("data-id");
+  if(e.target.closest(".x")){
+    if(!confirm("Delete this chat?"))return;
+    chats=chats.filter(function(c){return c.id!==id;});
+    if(!chats.length)newChat();
+    if(curId===id)curId=chats[0].id;
+    save();renderList();renderMsgs();
+  }else{curId=id;save();renderList();renderMsgs();drawer(false);}
+};
+$("#msgs").addEventListener("scroll",onScroll,{passive:true});
+$("#jump").onclick=function(){var b=$("#msgs");b.scrollTop=b.scrollHeight;};
+function copyText(text,btn){
+  function done(){toast("Copied");}
+  function fb(){var t=document.createElement("textarea");t.value=text;document.body.appendChild(t);t.select();try{document.execCommand("copy");done();}catch(x){}t.remove();}
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(text).then(done,fb);else fb();
+}
+$("#msgs").addEventListener("click",function(e){
+  var cp=e.target.closest(".cp");
+  if(cp){var o=cp.textContent;copyText(cp.parentNode.querySelector("code").textContent,cp);cp.textContent="Copied";setTimeout(function(){cp.textContent=o;},1400);return;}
+  var b=e.target.closest(".acts button");if(!b)return;
+  var m=b.closest(".m"),i=+m.getAttribute("data-i"),a=b.getAttribute("data-a");
+  if(a==="retry")regen();
+  else if(a==="edit")editLast();
+  else if(a==="del")delMsg(i);
+  else if(a==="copy"){var msg=cur().messages[i];if(msg)copyText(msg.content,b);}
+});
+$("#attach").onclick=function(){if(!cfg){return;}$("#file").click();};
+$("#att").onclick=function(e){var p=e.target.closest(".pillf");if(!p||!e.target.closest("button"))return;pend.splice(+p.getAttribute("data-i"),1);renderPend();};
+$("#file").onchange=async function(){
+  var files=Array.prototype.slice.call(this.files||[]);this.value="";
+  for(var i=0;i<files.length;i++){
+    if(pend.length>=3){toast("Up to 3 files per message.");break;}
+    try{pend.push(await readFile(files[i]));}catch(e){toast((e&&e.message)||("Couldn't read "+files[i].name));}
+  }
+  renderPend();
+};
+$("#exportBtn").onclick=function(){
+  var a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([JSON.stringify({app:"emawisex",v:1,chats:persistable()})],{type:"application/json"}));
+  a.download="chats-"+new Date().toISOString().slice(0,10)+".json";
+  document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},1500);
+  toast("Chats exported");
+};
+$("#importBtn").onclick=function(){$("#imp").click();};
+$("#imp").onchange=async function(){
+  var f=this.files&&this.files[0];this.value="";if(!f)return;
+  try{
+    var j=JSON.parse(await readAs(f,"text")),arr=Array.isArray(j)?j:j.chats;
+    if(!Array.isArray(arr))throw new Error("bad");
+    var have={},n=0;chats.forEach(function(c){have[c.id]=1;});
+    arr.forEach(function(c){
+      if(c&&c.id&&Array.isArray(c.messages)&&!have[String(c.id)]){
+        chats.push({id:String(c.id),title:String(c.title||"Chat").slice(0,60),t:+c.t||Date.now(),messages:c.messages.filter(function(m){return m&&typeof m==="object";}).map(cleanMsg)});
+        have[String(c.id)]=1;n++;
+      }
+    });
+    chats.sort(function(a,b){return (b.t||0)-(a.t||0);});
+    save();renderList();toast(n?("Imported "+n+" chat"+(n>1?"s":"")):"Nothing new to import");
+  }catch(e){toast("That file isn't a valid chat backup.");}
+};
+$("#clearBtn").onclick=function(){
+  if(busy)return;if(!confirm("Delete all chats on this device?"))return;
+  chats=[];newChat();save();renderList();renderMsgs();drawer(false);
+};
+
+setBusy(false);
+loadConfig();
+})();
+</script>
+</body>
+</html>
